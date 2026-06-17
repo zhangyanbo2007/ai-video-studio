@@ -1,6 +1,6 @@
 #!/bin/bash
 # AI 图片视频生成器 - 启动脚本
-# 用法: ./start.sh [local|frp|all|push]
+# 用法: ./start.sh [local|frp|all]
 
 set -e
 
@@ -13,21 +13,6 @@ start_server() {
     echo "✨ 启动 AI 图片视频生成器..."
     source .venv/bin/activate
     python server.py
-}
-
-push_github() {
-    echo "  推送到 GitHub..."
-
-    # unset 失效的 GITHUB_TOKEN，让 gh credential helper 生效
-    unset GITHUB_TOKEN
-    export https_proxy=http://127.0.0.1:7897
-    export HTTPS_PROXY=http://127.0.0.1:7897
-
-    git add -A
-    git commit -m "update: $(date '+%Y-%m-%d %H:%M')" || echo "没有新改动"
-    git push -u origin main 2>&1
-
-    echo "✅ 推送完成"
 }
 
 start_frp() {
@@ -76,15 +61,11 @@ case "$MODE" in
         start_frp
         kill $SERVER_PID 2>/dev/null
         ;;
-    push)
-        push_github
-        ;;
     *)
-        echo "用法: $0 [local|frp|all|push]"
+        echo "用法: $0 [local|frp|all]"
         echo "  local - 仅启动本地服务"
         echo "  frp   - 仅启动 FRP 隧道"
         echo "  all   - 同时启动（默认）"
-        echo "  push  - 推送到 GitHub"
         exit 1
         ;;
 esac
