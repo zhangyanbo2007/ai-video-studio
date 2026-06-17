@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 图片视频生成器</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary: #6366f1;
+      --primary-light: #818cf8;
+      --primary-dark: #4f46e5;
+      --accent: #f472b6;
+      --bg: #0f172a;
+      --bg-card: #1e293b;
+      --bg-card-hover: #334155;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --success: #22c55e;
+      --error: #ef4444;
+      --radius: 16px;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at 30% 20%, rgba(99,102,241,0.15) 0%, transparent 50%),
+                  radial-gradient(circle at 70% 80%, rgba(244,114,182,0.1) 0%, transparent 50%);
+      z-index: -1;
+      animation: bgFloat 20s ease-in-out infinite;
+    }
+
+    @keyframes bgFloat {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      33% { transform: translate(2%, -2%) rotate(1deg); }
+      66% { transform: translate(-1%, 1%) rotate(-0.5deg); }
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      padding: 40px 20px 20px;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #818cf8, #f472b6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+    }
+
+    /* 主布局 */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .container { grid-template-columns: 1fr; }
+    }
+
+    /* 卡片 */
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 24px;
+      transition: all 0.3s;
+    }
+
+    .card:hover {
+      border-color: var(--primary-light);
+      box-shadow: 0 0 30px rgba(99,102,241,0.1);
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* 上传区域 */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+      min-height: 320px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--primary);
+      background: rgba(99,102,241,0.08);
+    }
+
+    .upload-zone.has-file {
+      border-color: var(--success);
+      border-style: solid;
+    }
+
+    .upload-zone input[type="file"] {
+      display: none;
+    }
+
+    .upload-icon {
+      font-size: 3rem;
+      margin-bottom: 8px;
+    }
+
+    .upload-text {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .upload-text strong {
+      color: var(--primary-light);
+    }
+
+    .preview {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #000;
+    }
+
+    .preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .zone-btn {
+      padding: 5px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.2s;
+    }
+
+    .zone-btn:hover {
+      background: var(--bg-card-hover);
+      color: var(--text);
+      border-color: var(--primary);
+    }
+
+    .zone-btn.danger:hover {
+      background: rgba(239,68,68,0.15);
+      color: var(--error);
+      border-color: var(--error);
+    }
+
+    /* 文字输入 */
+    .prompt-area {
+      margin-top: 20px;
+    }
+
+    .prompt-area label {
+      display: block;
+      font-size: 0.95rem;
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .prompt-area textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.95rem;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 100px;
+      transition: border-color 0.2s;
+    }
+
+    .prompt-area textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .prompt-area textarea::placeholder {
+      color: var(--text-muted);
+    }
+
+    /* 选项行 */
+    .options-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    .option-group {
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .option-group label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .option-group select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .option-group select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    /* 生成按钮 */
+    .generate-btn {
+      width: 100%;
+      padding: 16px 32px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: white;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .generate-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(99,102,241,0.3);
+    }
+
+    .generate-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* 结果区 */
+    .result-item {
+      border-radius: 12px;
+      overflow: hidden;
+      background: #000;
+      position: relative;
+    }
+
+    .result-item video {
+      width: 100%;
+      display: block;
+      border-radius: 12px;
+    }
+
+    .result-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      min-height: 300px;
+      padding: 30px 20px;
+      color: var(--text-muted);
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+    }
+
+    .spinner {
+      width: 46px;
+      height: 46px;
+      border: 4px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+      margin-bottom: 16px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .mini-progress {
+      width: 80%;
+      max-width: 240px;
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 16px;
+    }
+
+    .mini-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      border-radius: 3px;
+      transition: width 0.4s ease;
+    }
+
+    .download-overlay {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-4px);
+      transition: opacity 0.2s, transform 0.2s;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.45);
+      z-index: 10;
+    }
+
+    .result-item:hover .download-overlay {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .download-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      background: var(--success);
+      color: white;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    .download-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 14px 24px;
+      border-radius: 12px;
+      background: var(--error);
+      color: white;
+      font-size: 0.95rem;
+      z-index: 1000;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s;
+    }
+
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { background: var(--success); }
+
+    /* 积分徽章 */
+    .credit-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      font-size: 0.9rem;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .credit-badge:hover { border-color: var(--primary); }
+    .credit-badge .num { font-weight: 700; color: var(--primary-light); }
+
+    /* 弹窗 */
+    .modal-mask {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-mask.open { display: flex; }
+    .modal-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      width: 92%;
+      max-width: 480px;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 28px 24px;
+      position: relative;
+    }
+    .modal-box h2 {
+      font-size: 1.3rem;
+      margin-bottom: 6px;
+      background: linear-gradient(135deg, #818cf8, #f472b6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .modal-box .sub { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px; }
+    .modal-close {
+      position: absolute; top: 14px; right: 16px;
+      background: none; border: none; color: var(--text-muted);
+      font-size: 1.4rem; cursor: pointer;
+    }
+    .modal-close:hover { color: var(--text); }
+
+    .plan-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .plan-card {
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 12px;
+      text-align: center;
+      transition: all 0.25s;
+      position: relative;
+    }
+    .plan-card:hover { border-color: var(--primary-light); transform: translateY(-2px); }
+    .plan-card .plan-name { font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; }
+    .plan-card .plan-desc { color: var(--text-muted); font-size: 0.8rem; margin-bottom: 8px; }
+    .plan-card .plan-price { font-size: 1.4rem; font-weight: 700; color: var(--primary-light); }
+    .plan-card .plan-price small { font-size: 0.75rem; font-weight: 400; color: var(--text-muted); }
+    .plan-card.full-width { grid-column: 1 / -1; }
+
+    .plan-tag {
+      position: absolute; top: -10px; right: -6px;
+      background: var(--accent); color: white;
+      font-size: 0.7rem; font-weight: 600;
+      padding: 2px 8px; border-radius: 8px;
+    }
+
+    .free-hint {
+      text-align: center;
+      margin-top: 12px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    /* 历史记录 */
+    .history-list {
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .history-item:hover {
+      border-color: var(--primary);
+    }
+
+    .history-item img {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+
+    .history-item .info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .history-item .prompt-text {
+      font-size: 0.85rem;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .history-item .time {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>✨ AI 图片视频生成器</h1>
+  <p>上传一张图片，输入文字描述，AI 帮你生成精彩视频</p>
+  <div style="margin-top:12px;display:none;" id="creditWrap">
+    <div id="creditBadge" class="credit-badge" onclick="openPayModal()">
+      <span>✨</span>
+      <span>剩余 <span id="creditNum" class="num">0</span> 次</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <!-- ===== 左侧：输入 ===== -->
+  <div class="card">
+    <div class="card-title">  上传图片</div>
+
+    <div id="personUpload" class="upload-zone" onclick="triggerUpload(this)">
+      <input type="file" accept="image/*" onchange="handleImageUpload(this)">
+      <div class="upload-icon"> </div>
+      <div class="upload-text"><strong>点击上传</strong> 一张图片</div>
+      <div class="upload-text" style="font-size:0.8rem">支持 JPG / PNG / WebP</div>
+    </div>
+
+    <!-- 操作按钮（图片已上传后显示）-->
+    <div id="imageBtns" style="display:none;margin-top:8px;gap:6px;justify-content:flex-end;">
+      <button class="zone-btn" onclick="document.getElementById('imageFileInput').click()">  更换</button>
+      <button class="zone-btn danger" onclick="removeImage()">  删除</button>
+    </div>
+
+    <!-- 文字描述 -->
+    <div class="prompt-area">
+      <label>✏️ 描述你想要的视频效果</label>
+      <textarea id="promptInput" placeholder="例如：一个人在跳舞，动作流畅优雅，全身镜头，高清画质" rows="4"></textarea>
+    </div>
+
+    <!-- 选项 -->
+    <div class="options-row">
+      <div class="option-group">
+        <label>⏱️ 视频时长</label>
+        <select id="durationSelect">
+          <option value="3">3 秒</option>
+          <option value="5" selected>5 秒</option>
+        </select>
+      </div>
+      <div class="option-group">
+        <label>  画质</label>
+        <select id="resolutionSelect">
+          <option value="480P">480P (快速)</option>
+          <option value="720P" selected>720P (推荐)</option>
+        </select>
+      </div>
+      <div class="option-group">
+        <label>  模型</label>
+        <select id="modelSelect">
+          <option value="wan2.7-i2v" selected>Wan2.7 (推荐)</option>
+          <option value="wan2.6-i2v-flash">Wan2.6 Flash (快速)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 生成按钮 -->
+    <button id="generateBtn" class="generate-btn" onclick="generateVideo()">
+      <span> </span>
+      <span>✨ 生成视频</span>
+    </button>
+  </div>
+
+  <!-- ===== 右侧：结果 ===== -->
+  <div class="card">
+    <div class="card-title">  生成结果</div>
+
+    <div id="resultArea">
+      <div id="videoPlaceholder" class="result-placeholder">
+        <div style="font-size: 3rem; margin-bottom: 8px; opacity: 0.3;"> </div>
+        <p>上传图片并输入描述后，点击「生成视频」</p>
+      </div>
+
+      <div id="videoLoading" class="result-placeholder" style="display:none;">
+        <div class="spinner"></div>
+        <p id="videoStatus" class="result-loading-text">正在生成视频…</p>
+        <div class="mini-progress"><div id="videoBar" class="mini-progress-bar"></div></div>
+      </div>
+
+      <div id="videoResultWrap" style="display:none;">
+        <div class="result-item">
+          <video id="videoResult" controls src="" style="width: 100%; border-radius: 12px; display:block;"></video>
+          <a id="videoDownload" class="download-btn download-overlay" href="#" download>⬇ 下载视频</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 充值弹窗 -->
+<div id="payModal" class="modal-mask" onclick="if(event.target===this)closePayModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closePayModal()">×</button>
+    <h2>✨ 充值中心</h2>
+    <p class="sub">输入兑换码充值，或查看套餐价格</p>
+
+    <div style="margin-bottom:20px;">
+      <div style="display:flex;gap:8px;">
+        <input id="redeemInput" type="text" placeholder="请输入兑换码（如 AV1234ABCD）"
+          style="flex:1;padding:12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:0.95rem;font-family:monospace;text-transform:uppercase;">
+        <button id="redeemBtn" onclick="handleRedeem()" style="padding:12px 20px;border:none;border-radius:8px;background:var(--primary);color:white;font-weight:600;cursor:pointer;white-space:nowrap;">兑换</button>
+      </div>
+      <p id="redeemMsg" style="margin-top:6px;font-size:0.85rem;color:var(--text-muted);"></p>
+    </div>
+
+    <div style="border-top:1px solid var(--border);padding-top:16px;">
+      <p style="font-size:0.9rem;color:var(--text-muted);margin-bottom:12px;">套餐价格（联系管理员购买兑换码）：</p>
+      <div class="plan-grid" id="planGrid"></div>
+    </div>
+
+    <p class="free-hint">新用户赠送 3 次免费体验</p>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<input type="file" id="imageFileInput" accept="image/*" style="display:none" onchange="handleImageUpload(this)">
+
+<script>
+// ===== State =====
+const state = {
+  uid: localStorage.getItem('avs_uid') || '',
+  imageFile: null,
+  imageUrl: null,
+  videoUrl: null,
+  credits: 0,
+  plans: {},
+};
+
+// ===== 用户系统 =====
+async function ensureUser() {
+  try {
+    const resp = await fetch('/api/user/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid: state.uid }),
+    });
+    const data = await resp.json();
+    state.uid = data.uid;
+    state.credits = data.credits;
+    localStorage.setItem('avs_uid', data.uid);
+    updateCreditBadge();
+    if (data.is_new) {
+      showToast('欢迎！赠送 3 次免费体验 ✨', 'success');
+    }
+  } catch (e) {
+    console.error('用户注册失败:', e);
+  }
+}
+
+function updateCreditBadge() {
+  const wrap = document.getElementById('creditWrap');
+  const num = document.getElementById('creditNum');
+  wrap.style.display = 'block';
+  num.textContent = state.credits;
+}
+
+async function refreshCredits() {
+  if (!state.uid) return;
+  try {
+    const resp = await fetch('/api/pay/status', {
+      headers: { 'X-User-Id': state.uid },
+    });
+    const data = await resp.json();
+    state.credits = data.credits;
+    updateCreditBadge();
+  } catch (e) { /* ignore */ }
+}
+
+// ===== 图片上传 =====
+function triggerUpload(zone) {
+  if (zone.classList.contains('has-file')) return;
+  const input = zone.querySelector('input[type="file"]');
+  if (input) input.click();
+}
+
+function handleImageUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  state.imageFile = file;
+  state.imageUrl = URL.createObjectURL(file);
+  showImagePreview(state.imageUrl);
+}
+
+function showImagePreview(url) {
+  const zone = document.getElementById('personUpload');
+  zone.classList.add('has-file');
+  zone.style.padding = '10px';
+  zone.innerHTML = `
+    <div class="preview" style="width:100%;height:100%">
+      <img src="${url}" alt="输入图片">
+    </div>
+    <input type="file" id="imageFileInput" accept="image/*" onchange="handleImageUpload(this)">
+  `;
+  document.getElementById('imageBtns').style.display = 'flex';
+}
+
+function removeImage() {
+  state.imageFile = null;
+  state.imageUrl = null;
+  const zone = document.getElementById('personUpload');
+  zone.classList.remove('has-file');
+  zone.style.padding = '';
+  zone.innerHTML = `
+    <input type="file" accept="image/*" onchange="handleImageUpload(this)">
+    <div class="upload-icon"> </div>
+    <div class="upload-text"><strong>点击上传</strong> 一张图片</div>
+    <div class="upload-text" style="font-size:0.8rem">支持 JPG / PNG / WebP</div>
+  `;
+  document.getElementById('imageBtns').style.display = 'none';
+}
+
+// ===== 上传文件到服务器 =====
+async function uploadFile(file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  const resp = await fetch('/api/upload', { method: 'POST', body: fd });
+  if (!resp.ok) throw new Error('上传失败');
+  return (await resp.json()).url;
+}
+
+// ===== 进度控制 =====
+function startProgress(label) {
+  const bar = document.getElementById('videoBar');
+  const status = document.getElementById('videoStatus');
+  let pct = 0, sec = 0;
+  bar.style.width = '0%';
+  const render = () => { status.textContent = `${label}  已用时 ${sec}s`; };
+  render();
+  const t = setInterval(() => {
+    sec += 1;
+    pct += Math.max(0.4, (92 - pct) * 0.06);
+    if (pct > 92) pct = 92;
+    bar.style.width = pct.toFixed(1) + '%';
+    render();
+  }, 1000);
+  return {
+    stage(l) { label = l; render(); },
+    done() { clearInterval(t); bar.style.width = '100%'; },
+    fail() { clearInterval(t); },
+  };
+}
+
+// ===== 生成视频 =====
+async function generateVideo() {
+  if (!state.imageFile) { showToast('请先上传一张图片'); return; }
+
+  const prompt = document.getElementById('promptInput').value.trim();
+  if (!prompt) { showToast('请输入视频描述'); return; }
+
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+
+  // 切换到 loading 状态
+  document.getElementById('videoPlaceholder').style.display = 'none';
+  document.getElementById('videoResultWrap').style.display = 'none';
+  document.getElementById('videoLoading').style.display = 'flex';
+
+  const prog = startProgress('上传图片中…');
+
+  try {
+    // 上传图片
+    const imageUrl = await uploadFile(state.imageFile);
+    state.imageUrl = imageUrl;
+
+    // 获取参数
+    const duration = document.getElementById('durationSelect').value;
+    const resolution = document.getElementById('resolutionSelect').value;
+    const model = document.getElementById('modelSelect').value;
+
+    prog.stage(`AI 生成视频中…（约需 2-5 分钟）`);
+
+    // 调用生成接口
+    const fd = new FormData();
+    fd.append('image', imageUrl);
+    fd.append('prompt', prompt);
+    fd.append('duration', duration);
+    fd.append('resolution', resolution);
+    fd.append('model', model);
+    fd.append('uid', state.uid);
+
+    const resp = await fetch('/api/generate', { method: 'POST', body: fd });
+
+    if (!resp.ok) {
+      const e = await resp.json();
+      if (resp.status === 402) { openPayModal(); throw new Error('余额不足，请充值'); }
+      throw new Error(e.detail || '视频生成失败');
+    }
+
+    const data = await resp.json();
+    state.videoUrl = data.video;
+
+    // 显示结果
+    document.getElementById('videoResult').src = data.video;
+    document.getElementById('videoDownload').href = data.video;
+    prog.done();
+
+    document.getElementById('videoLoading').style.display = 'none';
+    document.getElementById('videoResultWrap').style.display = 'block';
+
+    refreshCredits();
+    showToast(`视频生成成功！(${(data.duration_ms / 1000).toFixed(1)}s)`, 'success');
+
+  } catch (e) {
+    prog.fail();
+    showToast('生成失败: ' + e.message);
+    document.getElementById('videoLoading').style.display = 'none';
+    document.getElementById('videoPlaceholder').style.display = 'flex';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ===== 充值弹窗 =====
+async function openPayModal() {
+  document.getElementById('payModal').classList.add('open');
+  document.getElementById('redeemInput').value = '';
+  document.getElementById('redeemMsg').textContent = '';
+  await loadPlans();
+}
+
+function closePayModal() {
+  document.getElementById('payModal').classList.remove('open');
+}
+
+async function loadPlans() {
+  try {
+    const resp = await fetch('/api/pay/plans');
+    const data = await resp.json();
+    state.plans = data.plans;
+    renderPlans();
+  } catch (e) {
+    console.error('加载套餐失败:', e);
+  }
+}
+
+function renderPlans() {
+  const grid = document.getElementById('planGrid');
+  grid.innerHTML = '';
+  const order = ['pack_10', 'pack_30', 'standard', 'pro'];
+  const tags = { pack_30: '热门', standard: '性价比', pro: '最划算' };
+  order.forEach(key => {
+    const p = state.plans[key];
+    if (!p) return;
+    const card = document.createElement('div');
+    card.className = 'plan-card' + (key === 'pro' ? ' full-width' : '');
+    card.innerHTML = `
+      ${tags[key] ? `<div class="plan-tag">${tags[key]}</div>` : ''}
+      <div class="plan-name">${p.name}</div>
+      <div class="plan-desc">${p.desc}</div>
+      <div class="plan-price">${p.price_hint || ''}<small>/${
+        p.type === 'subscription' ? '月' : '次'
+      }</small></div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+async function handleRedeem() {
+  const code = document.getElementById('redeemInput').value.trim();
+  const msg = document.getElementById('redeemMsg');
+  const btn = document.getElementById('redeemBtn');
+
+  if (!code) { msg.textContent = '请输入兑换码'; msg.style.color = 'var(--error)'; return; }
+  if (!state.uid) { msg.textContent = '用户未初始化'; msg.style.color = 'var(--error)'; return; }
+
+  btn.disabled = true;
+  btn.textContent = '兑换中…';
+  msg.textContent = '';
+
+  try {
+    const resp = await fetch('/api/pay/redeem', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid: state.uid, code: code }),
+    });
+    const data = await resp.json();
+
+    if (data.success) {
+      msg.textContent = `✅ ${data.message}`;
+      msg.style.color = 'var(--success)';
+      state.credits += data.credits;
+      updateCreditBadge();
+      document.getElementById('redeemInput').value = '';
+      showToast(data.message, 'success');
+    } else {
+      throw new Error(data.detail || '兑换失败');
+    }
+  } catch (e) {
+    msg.textContent = `❌ ${e.message}`;
+    msg.style.color = 'var(--error)';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '兑换';
+  }
+}
+
+// ===== Toast =====
+function showToast(msg, type = 'error') {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = 'toast ' + type + ' show';
+  setTimeout(() => { toast.className = 'toast'; }, 3500);
+}
+
+// ===== 初始化 =====
+async function init() {
+  await ensureUser();
+}
+
+init();
+</script>
+</body>
+</html>
