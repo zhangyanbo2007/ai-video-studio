@@ -1009,6 +1009,18 @@ function showToast(msg, type = 'error') {
 // ===== 初始化 =====
 async function init() {
   await ensureUser();
+
+  // 初始化示例图片
+  try {
+    const resp = await fetch('/samples/portrait.jpg');
+    const blob = await resp.blob();
+    state.imageFile = new File([blob], 'portrait.jpg', { type: 'image/jpeg' });
+    state.imageUrl = '/samples/portrait.jpg';
+    // 自动填入示例提示词
+    document.getElementById('promptInput').value = '一位优雅的女士，微笑着轻轻托腮，粉色背景，镜头缓慢推进，展现温柔气质，高清画质';
+  } catch (e) {
+    console.error('加载示例图片失败:', e);
+  }
 }
 
 // ===== 使用示例 =====
