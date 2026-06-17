@@ -66,8 +66,16 @@ X-API-Key: avs-xxxxxxxxxxxxxxxx
 - **前端**: 原生 HTML/CSS/JS
 - **数据库**: SQLite
 
-## Cloudflare Tunnel 暴露外网
+## FRP 端口映射（外网访问）
 
 ```bash
-cloudflared tunnel --url http://localhost:8879
+# 方式1: 一键启动（服务 + FRP）
+./start.sh
+
+# 方式2: 分别启动
+./start.sh local   # 仅本地服务
+./start.sh frp     # 仅 FRP 隧道
 ```
+
+FRP 配置见 `frp-config.json`，映射关系：
+- 本地 8879 → VPS 8870
