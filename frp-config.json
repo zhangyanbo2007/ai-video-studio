@@ -1,0 +1,23 @@
+{
+  "vps": {
+    "host": "8.163.122.236",
+    "ssh_port": 22,
+    "ssh_user": "root",
+    "ssh_password": "Zyb9038123*",
+    "frp_control_port": 7000,
+    "frp_web_port": 7500,
+    "frp_web_user": "admin",
+    "frp_web_password": "ChangeMe_2026"
+  },
+  "services": {
+    "ai-video-studio": {
+      "production": {
+        "external_port": 8870,
+        "internal_port": 8879,
+        "local_ip": "127.0.0.1",
+        "frp_proxy_name": "node37-video-studio",
+        "description": "AI 图片视频生成器 - 蔡蔡体验版"
+      }
+    }
+  }
+}
