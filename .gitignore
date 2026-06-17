@@ -7,3 +7,4 @@ uploads/
 logs/
 data/
 .api_keys.json
+frp-config.json

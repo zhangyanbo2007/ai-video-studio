@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>欢迎蔡蔡体验</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      color: #f1f5f9;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* 粒子背景 */
+    .particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .particle {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: linear-gradient(135deg, #818cf8, #f472b6);
+      border-radius: 50%;
+      opacity: 0;
+      animation: float 6s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0% { opacity: 0; transform: translateY(100vh) scale(0); }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { opacity: 0; transform: translateY(-100vh) scale(1); }
+    }
+
+    .container {
+      text-align: center;
+      z-index: 1;
+      padding: 40px;
+      opacity: 0;
+      animation: fadeIn 1s ease 0.5s forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .emoji-large {
+      font-size: 80px;
+      margin-bottom: 20px;
+      animation: bounce 2s ease-in-out infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    h1 {
+      font-size: 3rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #818cf8, #f472b6, #818cf8);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shimmer 3s linear infinite;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 0% center; }
+      100% { background-position: 200% center; }
+    }
+
+    .subtitle {
+      font-size: 1.3rem;
+      color: #94a3b8;
+      margin-bottom: 40px;
+      opacity: 0;
+      animation: fadeIn 1s ease 1s forwards;
+    }
+
+    .enter-btn {
+      display: inline-block;
+      padding: 16px 48px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: white;
+      background: linear-gradient(135deg, #6366f1, #f472b6);
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.3s;
+      opacity: 0;
+      animation: fadeIn 1s ease 1.5s forwards, pulse 2s ease-in-out 2.5s infinite;
+    }
+
+    .enter-btn:hover {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 10px 40px rgba(99, 102, 241, 0.4);
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+      50% { box-shadow: 0 0 0 15px rgba(99, 102, 241, 0); }
+    }
+
+    .hint {
+      margin-top: 24px;
+      font-size: 0.9rem;
+      color: #64748b;
+      opacity: 0;
+      animation: fadeIn 1s ease 2s forwards;
+    }
+  </style>
+</head>
+<body>
+  <!-- 粒子 -->
+  <div class="particles" id="particles"></div>
+
+  <div class="container">
+    <div class="emoji-large"> </div>
+    <h1>欢迎蔡蔡体验</h1>
+    <p class="subtitle">✨ AI 图片视频生成器 ✨</p>
+    <a href="/" class="enter-btn" onclick="markVisited()">✨ 点击开始体验</a>
+    <p class="hint">上传一张图片，输入文字描述，AI 帮你生成精彩视频</p>
+  </div>
+
+  <script>
+    // 检查是否已访问过（基于 IP，用 sessionStorage 模拟）
+    // 注意：同一浏览器同一会话内只显示一次
+    if (sessionStorage.getItem('visited')) {
+      window.location.href = '/';
+    }
+
+    function markVisited() {
+      sessionStorage.setItem('visited', 'true');
+    }
+
+    // 创建粒子
+    const container = document.getElementById('particles');
+    for (let i = 0; i < 30; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'particle';
+      particle.style.left = Math.random() * 100 + '%';
+      particle.style.animationDelay = Math.random() * 6 + 's';
+      particle.style.animationDuration = (4 + Math.random() * 4) + 's';
+      container.appendChild(particle);
+    }
+  </script>
+</body>
+</html>

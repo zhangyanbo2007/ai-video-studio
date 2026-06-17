@@ -127,9 +127,26 @@ class GenerateRequest(BaseModel):
 # ===== Web UI =====
 
 @app.get("/", include_in_schema=False)
-async def index():
+async def index(request: Request):
+    # 检查 cookie 判断是否首次访问
+    visited = request.cookies.get("avs_visited")
+    if not visited:
+        # 首次访问，显示欢迎页面
+        from fastapi.responses import RedirectResponse
+        response = RedirectResponse(url="/welcome")
+        response.set_cookie("avs_visited", "true", max_age=86400 * 30)  # 30天
+        return response
     return FileResponse(
         BASE_DIR / "static" / "index.html",
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
+    )
+
+
+@app.get("/welcome", include_in_schema=False)
+async def welcome():
+    """欢迎页面（首次访问显示）"""
+    return FileResponse(
+        BASE_DIR / "static" / "welcome.html",
         headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
     )
 
@@ -139,6 +156,30 @@ async def index():
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "timestamp": datetime.now().isoformat()}
+
+
+# ===== 示例数据 =====
+
+@app.get("/api/examples")
+async def list_examples():
+    """获取示例数据（图片+提示词）"""
+    examples = []
+    samples_dir = BASE_DIR / "samples"
+    if samples_dir.exists():
+        for f in sorted(samples_dir.glob("*.jpg")):
+            examples.append({
+                "image": f"/samples/{f.name}",
+                "prompt": "一个人在跳舞，动作流畅优雅，全身镜头，高清画质",
+            })
+    return {"examples": examples}
+
+
+@app.get("/samples/{filename}")
+async def get_sample(filename: str):
+    file_path = BASE_DIR / "samples" / filename
+    if not file_path.exists():
+        raise HTTPException(404, "文件不存在")
+    return FileResponse(file_path)
 
 
 # ===== 文件上传（Web UI 用，无认证）=====
