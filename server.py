@@ -145,10 +145,14 @@ async def index(request: Request):
 @app.get("/welcome", include_in_schema=False)
 async def welcome():
     """欢迎页面（首次访问显示）"""
-    return FileResponse(
+    from fastapi.responses import FileResponse as FR
+    response = FR(
         BASE_DIR / "static" / "welcome.html",
         headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
     )
+    # 设置 cookie，这样从欢迎页面跳转到主页时不会再次重定向
+    response.set_cookie("avs_visited", "true", max_age=86400 * 30)
+    return response
 
 
 # ===== 健康检查 =====

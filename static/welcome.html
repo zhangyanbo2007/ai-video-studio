@@ -136,16 +136,15 @@
 
   <div class="container">
     <div class="emoji-large"> </div>
-    <h1>欢迎蔡蔡体验</h1>
+    <h1>欢迎体验</h1>
     <p class="subtitle">✨ AI 图片视频生成器 ✨</p>
     <a href="/" class="enter-btn" onclick="markVisited()">✨ 点击开始体验</a>
     <p class="hint">上传一张图片，输入文字描述，AI 帮你生成精彩视频</p>
   </div>
 
   <script>
-    // 检查是否已访问过（基于 IP，用 sessionStorage 模拟）
-    // 注意：同一浏览器同一会话内只显示一次
-    if (sessionStorage.getItem('visited')) {
+    // 检查是否已访问过
+    if (sessionStorage.getItem('avs_visited')) {
       window.location.href = '/';
     }
 
